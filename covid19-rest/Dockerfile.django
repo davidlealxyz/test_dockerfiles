@@ -1,0 +1,26 @@
+#FROM debian:buster
+FROM custom_python37:latest
+
+## VALUE BE devel OR master AS DEFINED IN THE COMPOSE FILE
+ARG branch
+
+## GET requirements.txt FROM GITHUB
+RUN cd /tmp/ && git clone https://github.com/jrnp97/covid19-Rest.git --branch ${branch} && \
+        pip install -r /tmp/covid19-Rest/requirements.txt
+
+## COPY ENTRYPOINT SCRIPT
+COPY django-entrypoint.sh /docker-entrypoint.sh
+
+## CREATE A SPACE TO MOUNT DATA AND MOVE TO IT
+RUN mkdir /app
+WORKDIR /app
+
+## DO NOT RUN CELERY / GUNICORN AS ROOT
+RUN groupadd -g 1000 -r django && useradd -r -u 1000 -g django django
+USER django
+#RUN groupadd -g 1000 -r www-data && useradd -r -u 1000 -g www-data www-data
+#USER www-data
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+EXPOSE 8000
